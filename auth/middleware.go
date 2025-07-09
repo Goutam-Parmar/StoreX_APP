@@ -3,6 +3,7 @@ package auth
 import (
 	"StoreXApp/utils"
 	"context"
+	"log"
 	"net/http"
 )
 
@@ -10,8 +11,11 @@ type contextKey string
 
 const AuthClaimsKey contextKey = "authClaims"
 
+// AuthMiddleware parses JWT and attaches claims to context
 func AuthMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		log.Println("✅ AuthMiddleware: called")
+
 		claims, err := utils.ExtractAuthClaims(r.Header.Get("Authorization"))
 		if err != nil {
 			http.Error(w, "Unauthorized: "+err.Error(), http.StatusUnauthorized)
@@ -23,14 +27,24 @@ func AuthMiddleware(next http.Handler) http.Handler {
 	})
 }
 
+// RequireRole checks role from context claims
 func RequireRole(role string) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			log.Printf("✅ RequireRole: required=%s", role)
+
 			claims, ok := r.Context().Value(AuthClaimsKey).(*utils.AuthClaims)
-			if !ok || claims.Role != role {
+			if !ok {
+				http.Error(w, "Forbidden: no auth claims", http.StatusForbidden)
+				return
+			}
+
+			if claims.Role != role {
 				http.Error(w, "Forbidden: role mismatch", http.StatusForbidden)
 				return
 			}
+
+			log.Printf("✅ RequireRole: matched role=%s", role)
 			next.ServeHTTP(w, r)
 		})
 	}
