@@ -3,7 +3,6 @@ package utils
 import (
 	"database/sql"
 	"fmt"
-	"log"
 	"strings"
 )
 
@@ -12,7 +11,6 @@ type AuthClaims struct {
 	UserID string
 }
 
-// ExtractAuthClaims parses JWT from Authorization header and extracts userId + role
 func ExtractAuthClaims(header string) (*AuthClaims, error) {
 	if header == "" || !strings.HasPrefix(header, "Bearer ") {
 		return nil, fmt.Errorf("missing or malformed Authorization header")
@@ -24,16 +22,13 @@ func ExtractAuthClaims(header string) (*AuthClaims, error) {
 		return nil, err
 	}
 
-	log.Println("✅ ExtractAuthClaims: token parsed")
+	role, okRole := claims["role"].(string)
+	userID, okID := claims["userId"].(string)
 
-	role, ok2 := claims["role"].(string)
-	userID, ok3 := claims["userId"].(string)
-
-	if !ok2 || !ok3 {
+	if !okRole || !okID {
 		return nil, fmt.Errorf("invalid claims in token")
 	}
-
-	log.Printf("✅ ExtractAuthClaims: userID=%s, role=%s", userID, role)
+	role = strings.ToLower(role)
 
 	return &AuthClaims{
 		UserID: userID,
@@ -41,7 +36,7 @@ func ExtractAuthClaims(header string) (*AuthClaims, error) {
 	}, nil
 }
 
-// Tx is a helper for transaction rollback
+// transaction rollback
 func Tx(tx *sql.Tx, err *error) {
 	if *err != nil {
 		_ = tx.Rollback()

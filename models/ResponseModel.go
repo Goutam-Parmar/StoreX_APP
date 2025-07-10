@@ -34,3 +34,48 @@ type SelfRegisterUserResponse struct {
 	EmpType        string  `json:"emp_type"`
 	ResponseTimeMs float64 `json:"response_time_ms"`
 }
+type CreateMobileAssetResponse struct {
+	AssetID        string  `json:"asset_id"`
+	MobileID       string  `json:"mobile_id"`
+	AssetType      string  `json:"asset_type"`
+	AssetStatus    string  `json:"asset_status"`
+	ResponseTimeMs float64 `json:"response_time_ms"`
+}
+type CreateMouseAssetResponse struct {
+	AssetID        string  `json:"asset_id"`
+	MouseID        string  `json:"mouse_id"`
+	AssetType      string  `json:"asset_type"`
+	AssetStatus    string  `json:"asset_status"`
+	ResponseTimeMs float64 `json:"response_time_ms"`
+}
+type CreateMonitorAssetResponse struct {
+	AssetID        string  `json:"asset_id"`
+	MonitorID      string  `json:"monitor_id"`
+	AssetType      string  `json:"asset_type"`
+	AssetStatus    string  `json:"asset_status"`
+	ResponseTimeMs float64 `json:"response_time_ms"`
+}
+
+type CreateHarddiskAssetResponse struct {
+	AssetID        string  `json:"asset_id"`
+	HarddiskID     string  `json:"harddisk_id"`
+	AssetType      string  `json:"asset_type"`
+	AssetStatus    string  `json:"asset_status"`
+	ResponseTimeMs float64 `json:"response_time_ms"`
+}
+
+type CreatePendriveAssetResponse struct {
+	AssetID        string  `json:"asset_id"`
+	PendriveID     string  `json:"pendrive_id"`
+	AssetType      string  `json:"asset_type"`
+	AssetStatus    string  `json:"asset_status"`
+	ResponseTimeMs float64 `json:"response_time_ms"`
+}
+
+type CreateAccessoriesAssetResponse struct {
+	AssetID        string  `json:"asset_id"`
+	AccessoriesID  string  `json:"accessories_id"`
+	AssetType      string  `json:"asset_type"`
+	AssetStatus    string  `json:"asset_status"`
+	ResponseTimeMs float64 `json:"response_time_ms"`
+}
