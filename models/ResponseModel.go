@@ -79,3 +79,10 @@ type CreateAccessoriesAssetResponse struct {
 	AssetStatus    string  `json:"asset_status"`
 	ResponseTimeMs float64 `json:"response_time_ms"`
 }
+type AssignAssetResponse struct {
+	AssetID        string  `json:"asset_id"`
+	AssignedTo     string  `json:"assigned_to"`
+	AssignedBy     string  `json:"assigned_by"`
+	AssignedAt     string  `json:"assigned_at"`
+	ResponseTimeMs float64 `json:"response_time_ms"`
+}

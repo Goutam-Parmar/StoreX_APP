@@ -141,3 +141,8 @@ type CreateAccessoriesAssetRequest struct {
 	Name string  `json:"name"`
 	Work *string `json:"work"`
 }
+type AssignAssetRequest struct {
+	AssetID    string `json:"asset_id"`
+	EmployeeID string `json:"employee_id"`
+	AssignedBy string `json:"-"`
+}
