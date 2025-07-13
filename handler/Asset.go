@@ -466,7 +466,7 @@ func AcessoriesAssignHandler() http.HandlerFunc {
 		}
 		claims, err := utils.ExtractAuthClaims(r.Header.Get("Authorization"))
 		if err != nil {
-			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			http.Error(w, "error in token extraction", http.StatusUnauthorized)
 			return
 		}
 		req.AssignedBy = claims.UserID
@@ -486,4 +486,18 @@ func AcessoriesAssignHandler() http.HandlerFunc {
 		json.NewEncoder(w).Encode(res)
 	}
 
+}
+func GetAllAssets() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
+
+		assets, err := dbhelper.GetAllAssets(ctx)
+		if err != nil {
+			http.Error(w, "Failed to fetch assets: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(assets)
+	}
 }

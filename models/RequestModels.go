@@ -28,9 +28,11 @@ type SelfRegisterUserRequest struct {
 	Lname     string
 	UserID    string
 }
+
 type CreateLaptopAssetRequest struct {
 	Brand          string   `json:"brand"`
 	Model          string   `json:"model"`
+	AssetType      string   `json:"asset_type"`
 	Category       *string  `json:"category"`
 	OwnedBy        *string  `json:"owned_by"`
 	PurchasePrice  *float64 `json:"purchase_price"`
@@ -49,6 +51,7 @@ type CreateLaptopAssetRequest struct {
 type CreateMobileAssetRequest struct {
 	Brand          string   `json:"brand"`
 	Model          string   `json:"model"`
+	AssetType      string   `json:"asset_type"`
 	Category       *string  `json:"category"`
 	OwnedBy        *string  `json:"owned_by"`
 	PurchasePrice  *float64 `json:"purchase_price"`
@@ -65,6 +68,7 @@ type CreateMobileAssetRequest struct {
 type CreateMouseAssetRequest struct {
 	Brand          string   `json:"brand"`
 	Model          string   `json:"model"`
+	AssetType      string   `json:"asset_type"`
 	Category       *string  `json:"category"`
 	OwnedBy        *string  `json:"owned_by"`
 	PurchasePrice  *float64 `json:"purchase_price"`
@@ -82,6 +86,7 @@ type CreateMouseAssetRequest struct {
 type CreateMonitorAssetRequest struct {
 	Brand          string   `json:"brand"`
 	Model          string   `json:"model"`
+	AssetType      string   `json:"asset_type"`
 	Category       *string  `json:"category"`
 	OwnedBy        *string  `json:"owned_by"`
 	PurchasePrice  *float64 `json:"purchase_price"`
@@ -99,6 +104,7 @@ type CreateMonitorAssetRequest struct {
 type CreateHarddiskAssetRequest struct {
 	Brand          string   `json:"brand"`
 	Model          string   `json:"model"`
+	AssetType      string   `json:"asset_type"`
 	Category       *string  `json:"category"`
 	OwnedBy        *string  `json:"owned_by"`
 	PurchasePrice  *float64 `json:"purchase_price"`
@@ -115,6 +121,7 @@ type CreateHarddiskAssetRequest struct {
 type CreatePendriveAssetRequest struct {
 	Brand          string   `json:"brand"`
 	Model          string   `json:"model"`
+	AssetType      string   `json:"asset_type"`
 	Category       *string  `json:"category"`
 	OwnedBy        *string  `json:"owned_by"`
 	PurchasePrice  *float64 `json:"purchase_price"`
@@ -126,10 +133,10 @@ type CreatePendriveAssetRequest struct {
 	Capacity string `json:"capacity"`
 }
 
-// ACCESSORIES
 type CreateAccessoriesAssetRequest struct {
 	Brand          string   `json:"brand"`
 	Model          string   `json:"model"`
+	AssetType      string   `json:"asset_type"`
 	Category       *string  `json:"category"`
 	OwnedBy        *string  `json:"owned_by"`
 	PurchasePrice  *float64 `json:"purchase_price"`
@@ -145,4 +152,24 @@ type AssignAssetRequest struct {
 	AssetID    string `json:"asset_id"`
 	EmployeeID string `json:"employee_id"`
 	AssignedBy string `json:"-"`
+}
+type EmployeeSearchByNameRequest struct {
+	Name string `json:"name"`
+}
+type EmployeeSearchByPhoneNoRequest struct {
+	PhoneNo string `json:"phone_no"`
+}
+
+type ChangeRoleRequest struct {
+	UserID string `json:"user_id"`
+	Role   string `json:"role"`
+}
+
+type RetrieveAssetRequest struct {
+	EmployeeID string `json:"employee_id"`
+	AssetID    string `json:"asset_id"`
+	Reason     string `json:"reason"`
+}
+type DeleteEmp struct {
+	EmployeeID string `json:"employee_id"`
 }

@@ -87,7 +87,6 @@ func CreateMouseAsset(tx *sql.Tx, req *models.CreateMouseAssetRequest) (string, 
 	if err != nil {
 		return "", "", err
 	}
-
 	return assetID, mouseID, nil
 }
 func CreateMonitorAsset(tx *sql.Tx, req *models.CreateMonitorAssetRequest) (string, string, error) {
@@ -114,7 +113,6 @@ func CreateMonitorAsset(tx *sql.Tx, req *models.CreateMonitorAssetRequest) (stri
 	if err != nil {
 		return "", "", err
 	}
-
 	return assetID, monitorID, nil
 }
 func CreateHarddiskAsset(tx *sql.Tx, req *models.CreateHarddiskAssetRequest) (string, string, error) {
@@ -256,7 +254,7 @@ func AssignMobileAsset(req *models.AssignAssetRequest) error {
 func AssignLaptopAsset(req *models.AssignAssetRequest) error {
 	ctx := context.Background()
 
-	tx, err := database.ST.BeginTx(ctx, nil) // ✔️ Start transaction
+	tx, err := database.ST.BeginTx(ctx, nil)
 	if err != nil {
 		log.Println("Transaction begin error:", err)
 		return err
@@ -347,8 +345,6 @@ func AssignMonitorAsset(req *models.AssignAssetRequest) error {
 		log.Println("Assets update error:", err)
 		return err
 	}
-
-	// ✅ Insert into asset_history for audit trail
 	_, err = tx.ExecContext(ctx, `
 		INSERT INTO asset_history (asset_id, old_status, new_status, employee_id, performed_by)
 		VALUES ($1, 'available', 'assigned', $2, $3)
@@ -532,7 +528,6 @@ func AssignPendriveAsset(req *models.AssignAssetRequest) error {
 }
 func AssignAccessoriesAsset(req *models.AssignAssetRequest) error {
 	ctx := context.Background()
-
 	var currentStatus string
 	err := database.ST.QueryRowContext(ctx, `
 		SELECT asset_status FROM assets 
