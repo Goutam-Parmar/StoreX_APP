@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"StoreXApp/auth"
 	"StoreXApp/dbhelper"
 	"StoreXApp/models"
 	"StoreXApp/utils"
@@ -55,12 +56,8 @@ func DynamicAssignAssetHandler() http.HandlerFunc {
 			http.Error(w, "Invalid request body", http.StatusBadRequest)
 			return
 		}
-		claims, err := utils.ExtractAuthClaims(r.Header.Get("Authorization"))
-		if err != nil {
-			http.Error(w, "failed to extract the created_by for jwt ", http.StatusUnauthorized)
-			return
-		}
-		req.AssignedBy = claims.UserID
+		data := r.Context().Value(auth.AuthClaimsKey).(*utils.AuthClaims)
+		req.AssignedBy = data.UserID
 		if err := dbhelper.DynamicAssignAsset(&req, w); err != nil {
 			return
 		}
@@ -78,14 +75,10 @@ func EmployeeSearchByName() http.HandlerFunc {
 			http.Error(w, "Invalid request body", http.StatusBadRequest)
 			return
 		}
-		claims, err := utils.ExtractAuthClaims(r.Header.Get("Authorization"))
-		if err != nil {
-			http.Error(w, "failed to extract the created_by for jwt ", http.StatusUnauthorized)
+		data := r.Context().Value(auth.AuthClaimsKey).(*utils.AuthClaims)
+		if data.Role == "employee" {
+			http.Error(w, "you are not eligible", http.StatusForbidden)
 			return
-		}
-
-		if claims.Role == "Employee" {
-			http.Error(w, "This is the Protected api , not for the Employee", http.StatusUnauthorized)
 		}
 		req.Name = strings.TrimSpace(req.Name)
 		if req.Name == "" {
@@ -122,14 +115,10 @@ func EmployeeSearchByPhoneNo() http.HandlerFunc {
 			http.Error(w, "Invalid request body", http.StatusBadRequest)
 			return
 		}
-		claims, err := utils.ExtractAuthClaims(r.Header.Get("Authorization"))
-		if err != nil {
-			http.Error(w, "failed to extract the created_by for jwt ", http.StatusUnauthorized)
+		data := r.Context().Value(auth.AuthClaimsKey).(*utils.AuthClaims)
+		if data.Role == "employee" {
+			http.Error(w, "you are not eligible", http.StatusForbidden)
 			return
-		}
-
-		if claims.Role == "Employee" {
-			http.Error(w, "This is the Protected api , not for the Employee", http.StatusUnauthorized)
 		}
 		req.PhoneNo = strings.TrimSpace(req.PhoneNo)
 
@@ -161,16 +150,11 @@ func EmployeeSearchByPhoneNo() http.HandlerFunc {
 func GetDashboard() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
-		claims, err := utils.ExtractAuthClaims(r.Header.Get("Authorization"))
-		if err != nil {
-			http.Error(w, "failed to extract the created_by for jwt ", http.StatusUnauthorized)
+		data := r.Context().Value(auth.AuthClaimsKey).(*utils.AuthClaims)
+		if data.Role == "employee" {
+			http.Error(w, "you are not eligible", http.StatusForbidden)
 			return
 		}
-
-		if claims.Role == "Employee" {
-			http.Error(w, "This is the Protected api , not for the Employee", http.StatusUnauthorized)
-		}
-
 		result, err := dbhelper.GetDashboardCounts()
 		if err != nil {
 			http.Error(w, "Failed to get dashboard data", http.StatusInternalServerError)
@@ -187,7 +171,11 @@ func GetDashboard() http.HandlerFunc {
 func GetAssetInfoHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		assetID := mux.Vars(r)["Asset_id"]
-
+		data := r.Context().Value(auth.AuthClaimsKey).(*utils.AuthClaims)
+		if data.Role == "employee" {
+			http.Error(w, "you are not eligible", http.StatusForbidden)
+			return
+		}
 		info, err := dbhelper.GetAssetInfo(assetID)
 		if err != nil {
 			http.Error(w, "Asset not found", http.StatusNotFound)
@@ -210,7 +198,11 @@ func ChangeRole() http.HandlerFunc {
 			http.Error(w, "UserID and Role are required", http.StatusBadRequest)
 			return
 		}
-
+		data := r.Context().Value(auth.AuthClaimsKey).(*utils.AuthClaims)
+		if data.Role == "employee" {
+			http.Error(w, "you are not eligible", http.StatusForbidden)
+			return
+		}
 		if err := dbhelper.ChangeUserRole(req.UserID, req.Role); err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
@@ -256,14 +248,10 @@ func RetrieveAsset() http.HandlerFunc {
 			return
 		}
 
-		claims, err := utils.ExtractAuthClaims(r.Header.Get("Authorization"))
-		if err != nil {
-			http.Error(w, "Failed to extract user from JWT", http.StatusUnauthorized)
-			return
-		}
-		performedBy := claims.UserID
+		data := r.Context().Value(auth.AuthClaimsKey).(*utils.AuthClaims)
+		performedBy := data.UserID
 
-		err = dbhelper.RetrieveAsset(req.AssetID, req.EmployeeID, req.Reason, performedBy)
+		err := dbhelper.RetrieveAsset(req.AssetID, req.EmployeeID, req.Reason, performedBy)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
@@ -274,6 +262,11 @@ func RetrieveAsset() http.HandlerFunc {
 }
 func AssetUnAssignedStatus() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		data := r.Context().Value(auth.AuthClaimsKey).(*utils.AuthClaims)
+		if data.Role == "employee" {
+			http.Error(w, "you are not eligible", http.StatusForbidden)
+			return
+		}
 		assets, err := dbhelper.GetUnAssignedAssets()
 		if err != nil {
 			http.Error(w, "Failed to get unassigned assets: "+err.Error(), http.StatusInternalServerError)
@@ -285,6 +278,11 @@ func AssetUnAssignedStatus() http.HandlerFunc {
 }
 func AssetAssignedStatus() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		data := r.Context().Value(auth.AuthClaimsKey).(*utils.AuthClaims)
+		if data.Role == "employee" {
+			http.Error(w, "you are not eligible", http.StatusForbidden)
+			return
+		}
 		assets, err := dbhelper.GetAssignedAssets()
 		if err != nil {
 			http.Error(w, "Failed to get assigned assets: "+err.Error(), http.StatusInternalServerError)

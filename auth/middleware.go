@@ -11,7 +11,6 @@ type contextKey string
 
 const AuthClaimsKey contextKey = "authClaims"
 
-// AuthMiddleware parses JWT and attaches claims to context
 func AuthMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
@@ -26,7 +25,6 @@ func AuthMiddleware(next http.Handler) http.Handler {
 	})
 }
 
-// RequireRole checks role from context claims
 func RequireRole(role string) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

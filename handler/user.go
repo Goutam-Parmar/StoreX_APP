@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"StoreXApp/auth"
 	"StoreXApp/dbhelper"
 	"StoreXApp/models"
 	"StoreXApp/utils"
@@ -14,15 +15,14 @@ import (
 func RegisterUserByEmpManager() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
-
-		authClaims, err := utils.ExtractAuthClaims(r.Header.Get("Authorization"))
+		data := r.Context().Value(auth.AuthClaimsKey).(*utils.AuthClaims)
 		var req models.RegisterUserRequest
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 			http.Error(w, "invalid request payload", http.StatusBadRequest)
 			return
 		}
 		req.Email = strings.TrimSpace(strings.ToLower(req.Email))
-		req.CreatedBy = authClaims.UserID
+		req.CreatedBy = data.UserID
 		if err := dbhelper.CheckRegisterCredentials(&req, w); err != nil {
 			return
 		}
@@ -52,13 +52,13 @@ func RegisterUserByEmpManager() http.HandlerFunc {
 func RegisterUserByAdmin() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
-		authClaims, err := utils.ExtractAuthClaims(r.Header.Get("Authorization"))
+		data := r.Context().Value(auth.AuthClaimsKey).(*utils.AuthClaims)
 		var req models.RegisterUserRequest
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 			http.Error(w, "Invalid request body", http.StatusBadRequest)
 			return
 		}
-		req.CreatedBy = authClaims.UserID
+		req.CreatedBy = data.UserID
 		req.Email = strings.TrimSpace(strings.ToLower(req.Email))
 		if err := dbhelper.CheckRegisterCredentials(&req, w); err != nil {
 			return
@@ -149,9 +149,15 @@ func RegisterSelf() http.HandlerFunc {
 }
 func GetAllEmployees() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		ctx := r.Context()
+		data := r.Context().Value(auth.AuthClaimsKey).(*utils.AuthClaims)
 
-		employees, err := dbhelper.GetAllEmployees(ctx)
+		if data.Role == "employee" {
+			http.Error(w, "you are not eligible", http.StatusForbidden)
+
+			return
+		}
+
+		employees, err := dbhelper.GetAllEmployees()
 		if err != nil {
 			http.Error(w, "Failed to fetch employees: "+err.Error(), http.StatusInternalServerError)
 			return
@@ -177,7 +183,10 @@ func EmployeeSearchByEmail() http.HandlerFunc {
 			http.Error(w, "Email is required", http.StatusBadRequest)
 			return
 		}
-
+		data := r.Context().Value(auth.AuthClaimsKey).(*utils.AuthClaims)
+		if data.Role == "Employee" {
+			http.Error(w, "you are not eligible", http.StatusForbidden)
+		}
 		result, err := dbhelper.SearchEmployeeByEmail(req.Email)
 		if err != nil {
 			http.Error(w, "Employee not found", http.StatusNotFound)
@@ -207,7 +216,10 @@ func DeleteEmployee() http.HandlerFunc {
 			http.Error(w, "Employee ID is required", http.StatusBadRequest)
 			return
 		}
-
+		data := r.Context().Value(auth.AuthClaimsKey).(*utils.AuthClaims)
+		if data.Role == "Employee" {
+			http.Error(w, "you are not eligible", http.StatusForbidden)
+		}
 		hasAssets, err := dbhelper.CheckEmployeeHasAssets(req.EmployeeID)
 		if err != nil {
 			http.Error(w, "Failed to check assets: "+err.Error(), http.StatusInternalServerError)
@@ -235,7 +247,10 @@ func GETAssetTimeLine() http.HandlerFunc {
 			http.Error(w, "Employee_Id is required", http.StatusBadRequest)
 			return
 		}
-
+		data := r.Context().Value(auth.AuthClaimsKey).(*utils.AuthClaims)
+		if data.Role == "Employee" {
+			http.Error(w, "you are not eligible", http.StatusForbidden)
+		}
 		timeline, err := dbhelper.GetEmployeeAssetTimeline(employeeID)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -248,19 +263,12 @@ func GETAssetTimeLine() http.HandlerFunc {
 }
 func GetMyDashboard() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		claims, err := utils.ExtractAuthClaims(r.Header.Get("Authorization"))
-		if err != nil {
-			http.Error(w, "Failed to extract user from JWT", http.StatusUnauthorized)
-			return
-		}
-		employeeID := claims.UserID
-
-		resp, err := dbhelper.GetMyDashboard(employeeID)
+		data := r.Context().Value(auth.AuthClaimsKey).(*utils.AuthClaims)
+		resp, err := dbhelper.GetMyDashboard(data.UserID)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(resp)
 	}

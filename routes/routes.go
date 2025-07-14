@@ -14,10 +14,11 @@ func InitRoutes() *mux.Router {
 	router.HandleFunc("/api/v2/auth/user/Register", handler.SignupV2()).Methods("POST")
 
 	// Employee routes
+	
 	Employee := router.PathPrefix("/api/v1/employee").Subrouter()
 	Employee.Use(auth.AuthMiddleware)
 	Employee.Use(auth.RequireRole("Employee"))
-	Employee.HandleFunc("/myDashBoard", handler.GetMyDashboard()).Methods("GET")
+	Employee.HandleFunc("/myDashBoard", handler.GetMyDashboard()).Methods("GET") // latest at top approach
 
 	admin := router.PathPrefix("/api/v1/admin").Subrouter()
 	admin.Use(auth.AuthMiddleware)
@@ -27,7 +28,6 @@ func InitRoutes() *mux.Router {
 	EmpManager := router.PathPrefix("/api/v1/EmpManager").Subrouter()
 	EmpManager.Use(auth.AuthMiddleware)
 	EmpManager.Use(auth.RequireRole("EmployeeManager"))
-
 	EmpManager.HandleFunc("/auth/registerByEmpManager", handler.RegisterUserByEmpManager()).Methods("POST")
 
 	AssetManager := router.PathPrefix("/api/v1/AssetManager").Subrouter()
@@ -50,7 +50,7 @@ func InitRoutes() *mux.Router {
 	AssetManager.HandleFunc("/Employee/AssignAccessories", handler.AcessoriesAssignHandler()).Methods("POST")
 	AssetManager.HandleFunc("/Employee/RetriveAsset", handler.RetrieveAsset()).Methods("POST")
 	AssetManager.HandleFunc("/DeleteAsset/{Asset_id}", handler.DeleteAsset()).Methods("DELETE") //make sure ki asset assign kisi ko na ho
-	//// dynamic assing asset api
+	//dynamic assing asset api
 	AssetManager.HandleFunc("/Employee/AssignAsset", handler.DynamicAssignAssetHandler()).Methods("POST")
 	// protected api not for Employee
 	Protected := router.PathPrefix("/api/v1/Protected").Subrouter()
@@ -67,6 +67,5 @@ func InitRoutes() *mux.Router {
 	Protected.HandleFunc("/GetUnAssignedList", handler.AssetUnAssignedStatus()).Methods("GET")
 	Protected.HandleFunc("/ChangeRole", handler.ChangeRole()).Methods("PATCH")
 	Protected.HandleFunc("/DeleteEmployee", handler.DeleteEmployee()).Methods("DELETE")
-
 	return router
 }

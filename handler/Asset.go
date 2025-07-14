@@ -1,12 +1,12 @@
 package handler
 
 import (
+	"StoreXApp/auth"
 	"StoreXApp/database"
 	"StoreXApp/dbhelper"
 	"StoreXApp/models"
 	"StoreXApp/utils"
 	"encoding/json"
-	"log"
 	"net/http"
 	"time"
 )
@@ -14,22 +14,18 @@ import (
 func CreateLaptopAssetHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
-		authClaims, err := utils.ExtractAuthClaims(r.Header.Get("Authorization"))
-		if err != nil {
-			http.Error(w, "Unauthorized: "+err.Error(), http.StatusUnauthorized)
-			return
-		}
+
+		data := r.Context().Value(auth.AuthClaimsKey).(*utils.AuthClaims)
 		var req models.CreateLaptopAssetRequest
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 			http.Error(w, "Invalid request body", http.StatusBadRequest)
 			return
 		}
-		req.CreatedBy = authClaims.UserID
+		req.CreatedBy = data.UserID
 		tx, err := database.ST.Begin()
 		defer utils.Tx(tx, &err)
 		assetID, laptopID, err := dbhelper.CreateLaptopAsset(tx, &req)
 		if err != nil {
-			log.Printf("CreateLaptopAsset error: %v", err)
 			http.Error(w, "Failed to create asset", http.StatusInternalServerError)
 			return
 		}
@@ -51,22 +47,17 @@ func CreateLaptopAssetHandler() http.HandlerFunc {
 func CreateMobileAssetHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
-		authClaims, err := utils.ExtractAuthClaims(r.Header.Get("Authorization"))
-		if err != nil {
-			http.Error(w, "Unauthorized: "+err.Error(), http.StatusUnauthorized)
-			return
-		}
+		data := r.Context().Value(auth.AuthClaimsKey).(*utils.AuthClaims)
 		var req models.CreateMobileAssetRequest
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 			http.Error(w, "Invalid request body", http.StatusBadRequest)
 			return
 		}
-		req.CreatedBy = authClaims.UserID
+		req.CreatedBy = data.UserID
 		tx, err := database.ST.Begin()
 		defer utils.Tx(tx, &err)
 		assetID, mobileID, err := dbhelper.CreateMobileAsset(tx, &req)
 		if err != nil {
-			log.Printf(" CreateMobileAsset error: %v", err)
 			http.Error(w, "Failed to create mobile asset", http.StatusInternalServerError)
 			return
 		}
@@ -88,17 +79,13 @@ func CreateMobileAssetHandler() http.HandlerFunc {
 func CreateMouseAssetHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
-		authClaims, err := utils.ExtractAuthClaims(r.Header.Get("Authorization"))
-		if err != nil {
-			http.Error(w, "Unauthorized: "+err.Error(), http.StatusUnauthorized)
-			return
-		}
+		data := r.Context().Value(auth.AuthClaimsKey).(*utils.AuthClaims)
 		var req models.CreateMouseAssetRequest
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 			http.Error(w, "Invalid request body", http.StatusBadRequest)
 			return
 		}
-		req.CreatedBy = authClaims.UserID
+		req.CreatedBy = data.UserID
 		tx, err := database.ST.Begin()
 		defer utils.Tx(tx, &err)
 		assetID, mouseID, err := dbhelper.CreateMouseAsset(tx, &req)
@@ -125,18 +112,13 @@ func CreateMouseAssetHandler() http.HandlerFunc {
 func CreateMonitorAssetHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
-		authHeader := r.Header.Get("Authorization")
-		if authHeader == "" {
-			http.Error(w, "missing auth header", http.StatusUnauthorized)
-			return
-		}
-		authClaims, err := utils.ExtractAuthClaims(authHeader)
+		data := r.Context().Value(auth.AuthClaimsKey).(*utils.AuthClaims)
 		var req models.CreateMonitorAssetRequest
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 			http.Error(w, "Invalid request body", http.StatusBadRequest)
 			return
 		}
-		req.CreatedBy = authClaims.UserID
+		req.CreatedBy = data.UserID
 		tx, err := database.ST.Begin()
 		defer utils.Tx(tx, &err)
 		assetID, monitorID, err := dbhelper.CreateMonitorAsset(tx, &req)
@@ -163,18 +145,13 @@ func CreateMonitorAssetHandler() http.HandlerFunc {
 func CreateHarddiskAssetHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
-		authHeader := r.Header.Get("Authorization")
-		if authHeader == "" {
-			http.Error(w, "missing auth header", http.StatusUnauthorized)
-			return
-		}
-		authClaims, err := utils.ExtractAuthClaims(authHeader)
+		data := r.Context().Value(auth.AuthClaimsKey).(*utils.AuthClaims)
 		var req models.CreateHarddiskAssetRequest
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 			http.Error(w, "Invalid request body", http.StatusBadRequest)
 			return
 		}
-		req.CreatedBy = authClaims.UserID
+		req.CreatedBy = data.UserID
 		tx, err := database.ST.Begin()
 		defer utils.Tx(tx, &err)
 		assetID, harddiskID, err := dbhelper.CreateHarddiskAsset(tx, &req)
@@ -201,18 +178,13 @@ func CreateHarddiskAssetHandler() http.HandlerFunc {
 func CreatePendriveAssetHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
-		authHeader := r.Header.Get("Authorization")
-		if authHeader == "" {
-			http.Error(w, "missing auth header", http.StatusUnauthorized)
-			return
-		}
-		authClaims, err := utils.ExtractAuthClaims(authHeader)
+		data := r.Context().Value(auth.AuthClaimsKey).(*utils.AuthClaims)
 		var req models.CreatePendriveAssetRequest
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 			http.Error(w, "Invalid request body", http.StatusBadRequest)
 			return
 		}
-		req.CreatedBy = authClaims.UserID
+		req.CreatedBy = data.UserID
 		tx, err := database.ST.Begin()
 		defer utils.Tx(tx, &err)
 		assetID, pendriveID, err := dbhelper.CreatePendriveAsset(tx, &req)
@@ -239,18 +211,13 @@ func CreatePendriveAssetHandler() http.HandlerFunc {
 func CreateAccessoriesAssetHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
-		authHeader := r.Header.Get("Authorization")
-		if authHeader == "" {
-			http.Error(w, "missing auth header", http.StatusUnauthorized)
-			return
-		}
-		authClaims, err := utils.ExtractAuthClaims(authHeader)
+		data := r.Context().Value(auth.AuthClaimsKey).(*utils.AuthClaims)
 		var req models.CreateAccessoriesAssetRequest
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 			http.Error(w, "Invalid request body", http.StatusBadRequest)
 			return
 		}
-		req.CreatedBy = authClaims.UserID
+		req.CreatedBy = data.UserID
 		tx, err := database.ST.Begin()
 		defer utils.Tx(tx, &err)
 		assetID, accessoriesID, err := dbhelper.CreateAccessoriesAsset(tx, &req)
@@ -282,12 +249,8 @@ func LaptopAssignHandler() http.HandlerFunc {
 			http.Error(w, "Invalid request body", http.StatusBadRequest)
 			return
 		}
-		claims, err := utils.ExtractAuthClaims(r.Header.Get("Authorization"))
-		if err != nil {
-			http.Error(w, "Unauthorized", http.StatusUnauthorized)
-			return
-		}
-		req.AssignedBy = claims.UserID
+		data := r.Context().Value(auth.AuthClaimsKey).(*utils.AuthClaims)
+		req.AssignedBy = data.UserID
 		if err := dbhelper.AssignLaptopAsset(&req); err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
@@ -311,13 +274,9 @@ func MobileAssignHandler() http.HandlerFunc {
 			http.Error(w, "Invalid request body", http.StatusBadRequest)
 			return
 		}
-		claims, err := utils.ExtractAuthClaims(r.Header.Get("Authorization"))
-		if err != nil {
-			http.Error(w, "Unauthorized", http.StatusUnauthorized)
-			return
-		}
-		req.AssignedBy = claims.UserID
-		err = dbhelper.AssignMobileAsset(&req)
+		data := r.Context().Value(auth.AuthClaimsKey).(*utils.AuthClaims)
+		req.AssignedBy = data.UserID
+		err := dbhelper.AssignMobileAsset(&req)
 		if err != nil {
 			http.Error(w, "Could not assign mobile: "+err.Error(), http.StatusInternalServerError)
 			return
@@ -341,13 +300,9 @@ func MonitorAssignHandler() http.HandlerFunc {
 			http.Error(w, "Invalid request body", http.StatusBadRequest)
 			return
 		}
-		claims, err := utils.ExtractAuthClaims(r.Header.Get("Authorization"))
-		if err != nil {
-			http.Error(w, "Unauthorized", http.StatusUnauthorized)
-			return
-		}
-		req.AssignedBy = claims.UserID
-		err = dbhelper.AssignMonitorAsset(&req)
+		data := r.Context().Value(auth.AuthClaimsKey).(*utils.AuthClaims)
+		req.AssignedBy = data.UserID
+		err := dbhelper.AssignMonitorAsset(&req)
 		if err != nil {
 			http.Error(w, "Could not assign monitor: "+err.Error(), http.StatusInternalServerError)
 			return
@@ -372,13 +327,9 @@ func MouseAssignHandler() http.HandlerFunc {
 			http.Error(w, "Invalid request body", http.StatusBadRequest)
 			return
 		}
-		claims, err := utils.ExtractAuthClaims(r.Header.Get("Authorization"))
-		if err != nil {
-			http.Error(w, "Unauthorized", http.StatusUnauthorized)
-			return
-		}
-		req.AssignedBy = claims.UserID
-		err = dbhelper.AssignMouseAsset(&req)
+		data := r.Context().Value(auth.AuthClaimsKey).(*utils.AuthClaims)
+		req.AssignedBy = data.UserID
+		err := dbhelper.AssignMouseAsset(&req)
 		if err != nil {
 			http.Error(w, "Could not assign mouse: "+err.Error(), http.StatusInternalServerError)
 			return
@@ -402,13 +353,9 @@ func HardDiskAssignHandler() http.HandlerFunc {
 			http.Error(w, "Invalid request body", http.StatusBadRequest)
 			return
 		}
-		claims, err := utils.ExtractAuthClaims(r.Header.Get("Authorization"))
-		if err != nil {
-			http.Error(w, "Unauthorized", http.StatusUnauthorized)
-			return
-		}
-		req.AssignedBy = claims.UserID
-		err = dbhelper.AssignHardDiskAsset(&req)
+		data := r.Context().Value(auth.AuthClaimsKey).(*utils.AuthClaims)
+		req.AssignedBy = data.UserID
+		err := dbhelper.AssignHardDiskAsset(&req)
 		if err != nil {
 			http.Error(w, "Could not assign mouse: "+err.Error(), http.StatusInternalServerError)
 			return
@@ -433,13 +380,9 @@ func PendriveAssignHandler() http.HandlerFunc {
 			http.Error(w, "Invalid request body", http.StatusBadRequest)
 			return
 		}
-		claims, err := utils.ExtractAuthClaims(r.Header.Get("Authorization"))
-		if err != nil {
-			http.Error(w, "Unauthorized", http.StatusUnauthorized)
-			return
-		}
-		req.AssignedBy = claims.UserID
-		err = dbhelper.AssignPendriveAsset(&req)
+		data := r.Context().Value(auth.AuthClaimsKey).(*utils.AuthClaims)
+		req.AssignedBy = data.UserID
+		err := dbhelper.AssignPendriveAsset(&req)
 		if err != nil {
 			http.Error(w, "Could not assign mouse: "+err.Error(), http.StatusInternalServerError)
 			return
@@ -464,13 +407,9 @@ func AcessoriesAssignHandler() http.HandlerFunc {
 			http.Error(w, "Invalid request body", http.StatusBadRequest)
 			return
 		}
-		claims, err := utils.ExtractAuthClaims(r.Header.Get("Authorization"))
-		if err != nil {
-			http.Error(w, "error in token extraction", http.StatusUnauthorized)
-			return
-		}
-		req.AssignedBy = claims.UserID
-		err = dbhelper.AssignAccessoriesAsset(&req)
+		data := r.Context().Value(auth.AuthClaimsKey).(*utils.AuthClaims)
+		req.AssignedBy = data.UserID
+		err := dbhelper.AssignAccessoriesAsset(&req)
 		if err != nil {
 			http.Error(w, "Could not assign mouse: "+err.Error(), http.StatusInternalServerError)
 			return
@@ -489,9 +428,12 @@ func AcessoriesAssignHandler() http.HandlerFunc {
 }
 func GetAllAssets() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		ctx := r.Context()
-
-		assets, err := dbhelper.GetAllAssets(ctx)
+		data := r.Context().Value(auth.AuthClaimsKey).(*utils.AuthClaims)
+		if data.Role == "employee" {
+			http.Error(w, "you are not eligible", http.StatusForbidden)
+			return
+		}
+		assets, err := dbhelper.GetAllAssets()
 		if err != nil {
 			http.Error(w, "Failed to fetch assets: "+err.Error(), http.StatusInternalServerError)
 			return

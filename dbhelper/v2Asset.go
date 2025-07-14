@@ -56,28 +56,33 @@ func SignupOrLoginUser(email string) (string, string, error) {
 	return userID, role, nil
 }
 func DynamicAssignAsset(req *models.AssignAssetRequest, w http.ResponseWriter) error {
-	ctx := context.Background()
 	var assetType string
 	var currentStatus string
-	log.Println("inside DynamicAssignAsset db helper ")
-	err := database.ST.QueryRowContext(ctx, `
+
+	log.Println("inside DynamicAssignAsset db helper")
+
+	err := database.ST.QueryRow(`
 		SELECT asset_type, asset_status 
 		FROM assets 
 		WHERE id = $1 AND deleted_at IS NULL
 	`, req.AssetID).Scan(&assetType, &currentStatus)
-	log.Println("just after the asset type query ")
+
+	log.Println("just after the asset type query")
+
 	if err != nil {
 		log.Println("Asset lookup error:", err)
 		return errors.New("invalid asset ID")
 	}
+
 	if currentStatus != "available" {
-		http.Error(w, "Asset is not available , asisned to someone else: ", http.StatusInternalServerError)
+		http.Error(w, "Asset is not available, assigned to someone else", http.StatusInternalServerError)
 		return errors.New("asset is not available for assignment")
 	}
-	log.Println("Asset assigned:", req.AssetID)
-	log.Println("Asset type is ", assetType)
 
-	log.Println("just before the if else statement ")
+	log.Println("Asset assigned:", req.AssetID)
+	log.Println("Asset type is", assetType)
+	log.Println("just before the if else statement")
+
 	if assetType == "laptop" {
 		return AssignLaptopAsset(req)
 	} else if assetType == "mobile" {
@@ -96,7 +101,7 @@ func DynamicAssignAsset(req *models.AssignAssetRequest, w http.ResponseWriter) e
 		return errors.New("unsupported asset type: " + assetType)
 	}
 }
-func GetAllAssets(ctx context.Context) ([]models.AssetResponse, error) {
+func GetAllAssets() ([]models.AssetResponse, error) {
 	query := `
 		SELECT 
 			a.id,
@@ -115,7 +120,7 @@ func GetAllAssets(ctx context.Context) ([]models.AssetResponse, error) {
 			a.is_active = TRUE AND a.deleted_at IS NULL
 	`
 
-	rows, err := database.ST.QueryContext(ctx, query)
+	rows, err := database.ST.Query(query)
 	if err != nil {
 		return nil, err
 	}
@@ -145,6 +150,7 @@ func GetAllAssets(ctx context.Context) ([]models.AssetResponse, error) {
 
 	return assets, nil
 }
+
 func SearchEmployeeByName(keyword string) ([]models.EmployeeSearchByNameUser, error) {
 	query := `
 		SELECT id, fname, lname, email, role, emp_type 
@@ -283,7 +289,6 @@ func GetDashboardCounts() (*models.DashboardResponse, error) {
 func GetAssetInfo(assetID string) (*models.SimpleAssetInfoResponse, error) {
 	var res models.SimpleAssetInfoResponse
 
-	// 🗃️ Step 1: Common asset info nikaalo
 	err := database.ST.QueryRow(`
 	SELECT id, brand, model, asset_type, purchase_price, purchased_date, asset_status
 	FROM assets WHERE id = $1 AND deleted_at IS NULL

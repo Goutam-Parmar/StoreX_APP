@@ -12,16 +12,23 @@ import (
 func CreateLaptopAsset(tx *sql.Tx, req *models.CreateLaptopAssetRequest) (string, string, error) {
 	var assetID string
 	err := tx.QueryRow(`
-		INSERT INTO assets (brand, model, asset_type, category, owned_by, purchase_price, purchased_date, warranty_start, warranty_expire, created_by)
-		VALUES ($1, $2, 'laptop', $3, COALESCE($4, 'Remotestate'), $5, $6, $7, $8, $9)
-		RETURNING id
-	`,
-		req.Brand, req.Model, req.Category, req.OwnedBy, req.PurchasePrice, req.PurchasedDate, req.WarrantyStart, req.WarrantyExpire, req.CreatedBy,
+  INSERT INTO assets (
+    brand, model, asset_type, category, owned_by,
+    purchase_price, purchased_date, warranty_start, warranty_expire, created_by
+  )
+  VALUES (
+    $1, $2, 'laptop', $3, COALESCE($4, 'Remotestate'),
+    $5, $6, $7, $8, $9
+  )
+  RETURNING id
+`,
+		req.Brand, req.Model, req.Category, req.OwnedBy,
+		req.PurchasePrice, req.PurchasedDate, req.WarrantyStart, req.WarrantyExpire, req.CreatedBy,
 	).Scan(&assetID)
+
 	if err != nil {
 		return "", "", err
 	}
-
 	var laptopID string
 	err = tx.QueryRow(`
 		INSERT INTO laptop (asset_id, processor, ram, storage, os, created_by)
@@ -36,19 +43,23 @@ func CreateLaptopAsset(tx *sql.Tx, req *models.CreateLaptopAssetRequest) (string
 
 	return assetID, laptopID, nil
 }
+
 func CreateMobileAsset(tx *sql.Tx, req *models.CreateMobileAssetRequest) (string, string, error) {
 	var assetID string
 	err := tx.QueryRow(`
-		INSERT INTO assets (brand, model, asset_type, category, owned_by, purchase_price, purchased_date, warranty_start, warranty_expire, created_by)
-		VALUES ($1, $2, 'mobile', $3, COALESCE($4, 'Remotestate'), $5, $6, $7, $8, $9)
-		RETURNING id
-	`,
-		req.Brand, req.Model, req.Category, req.OwnedBy, req.PurchasePrice, req.PurchasedDate, req.WarrantyStart, req.WarrantyExpire, req.CreatedBy,
+	INSERT INTO assets (
+		brand, model, asset_type, category, owned_by, 
+		purchase_price, purchased_date, warranty_start, warranty_expire, created_by
+	)
+	VALUES ($1, $2, 'mobile', $3, COALESCE($4, 'Remotestate'), $5, $6, $7, $8, $9)
+	RETURNING id
+`,
+		req.Brand, req.Model, req.Category, req.OwnedBy, req.PurchasePrice,
+		req.PurchasedDate, req.WarrantyStart, req.WarrantyExpire, req.CreatedBy,
 	).Scan(&assetID)
 	if err != nil {
 		return "", "", err
 	}
-
 	var mobileID string
 	err = tx.QueryRow(`
 		INSERT INTO mobile (asset_id, imei, ram, storage, created_by)
@@ -250,15 +261,8 @@ func AssignMobileAsset(req *models.AssignAssetRequest) error {
 
 	return nil
 }
-
 func AssignLaptopAsset(req *models.AssignAssetRequest) error {
-	ctx := context.Background()
-
-	tx, err := database.ST.BeginTx(ctx, nil)
-	if err != nil {
-		log.Println("Transaction begin error:", err)
-		return err
-	}
+	tx, err := database.ST.Begin()
 	defer func() {
 		if p := recover(); p != nil {
 			tx.Rollback()
@@ -269,11 +273,12 @@ func AssignLaptopAsset(req *models.AssignAssetRequest) error {
 			err = tx.Commit()
 		}
 	}()
+
 	var currentStatus string
-	err = tx.QueryRowContext(ctx, `
+	err = tx.QueryRow(`
 		SELECT asset_status FROM assets 
 		WHERE id = $1 AND asset_type = 'laptop' AND deleted_at IS NULL
-		FOR UPDATE -- 🚩 Locks the row to prevent race conditions
+		
 	`, req.AssetID).Scan(&currentStatus)
 	if err != nil {
 		log.Println("Asset check error:", err)
@@ -283,7 +288,8 @@ func AssignLaptopAsset(req *models.AssignAssetRequest) error {
 	if currentStatus != "available" {
 		return errors.New("laptop is not available for assignment")
 	}
-	_, err = tx.ExecContext(ctx, `
+
+	_, err = tx.Exec(`
 		INSERT INTO asset_timeline (asset_id, assigned_to, assigned_by)
 		VALUES ($1, $2, $3)
 	`, req.AssetID, req.EmployeeID, req.AssignedBy)
@@ -291,14 +297,16 @@ func AssignLaptopAsset(req *models.AssignAssetRequest) error {
 		log.Println("Timeline insert error:", err)
 		return err
 	}
-	_, err = tx.ExecContext(ctx, `
+
+	_, err = tx.Exec(`
 		UPDATE assets SET asset_status = 'assigned', updated_at = now() WHERE id = $1
 	`, req.AssetID)
 	if err != nil {
 		log.Println("Assets update error:", err)
 		return err
 	}
-	_, err = tx.ExecContext(ctx, `
+
+	_, err = tx.Exec(`
 		INSERT INTO asset_history (asset_id, old_status, new_status, employee_id, performed_by)
 		VALUES ($1, 'available', 'assigned', $2, $3)
 	`, req.AssetID, req.EmployeeID, req.AssignedBy)
@@ -306,17 +314,19 @@ func AssignLaptopAsset(req *models.AssignAssetRequest) error {
 		log.Println("History insert error:", err)
 		return err
 	}
+
 	return nil
 }
+
 func AssignMonitorAsset(req *models.AssignAssetRequest) error {
-	ctx := context.Background()
 	var currentStatus string
-	err := database.ST.QueryRowContext(ctx, `
-		SELECT asset_status FROM assets WHERE id = $1 AND asset_type = 'monitor' AND deleted_at IS NULL
+	err := database.ST.QueryRow(`
+		SELECT asset_status 
+		FROM assets 
+		WHERE id = $1 AND asset_type = 'monitor' AND deleted_at IS NULL
 	`, req.AssetID).Scan(&currentStatus)
 
 	if err != nil {
-		log.Println("Asset check error:", err)
 		return errors.New("invalid asset ID")
 	}
 
@@ -324,13 +334,23 @@ func AssignMonitorAsset(req *models.AssignAssetRequest) error {
 		return errors.New("monitor is not available for assignment")
 	}
 
-	tx, err := database.ST.BeginTx(ctx, nil)
+	tx, err := database.ST.Begin()
 	if err != nil {
 		log.Println("Transaction begin error:", err)
 		return err
 	}
-	defer tx.Rollback()
-	_, err = tx.ExecContext(ctx, `
+	defer func() {
+		if p := recover(); p != nil {
+			_ = tx.Rollback()
+			panic(p)
+		} else if err != nil {
+			_ = tx.Rollback()
+		} else {
+			err = tx.Commit()
+		}
+	}()
+
+	_, err = tx.Exec(`
 		INSERT INTO asset_timeline (asset_id, assigned_to, assigned_by)
 		VALUES ($1, $2, $3)
 	`, req.AssetID, req.EmployeeID, req.AssignedBy)
@@ -338,14 +358,18 @@ func AssignMonitorAsset(req *models.AssignAssetRequest) error {
 		log.Println("Timeline insert error:", err)
 		return err
 	}
-	_, err = tx.ExecContext(ctx, `
-		UPDATE assets SET asset_status = 'assigned', updated_at = now() WHERE id = $1
+
+	_, err = tx.Exec(`
+		UPDATE assets 
+		SET asset_status = 'assigned', updated_at = now() 
+		WHERE id = $1
 	`, req.AssetID)
 	if err != nil {
 		log.Println("Assets update error:", err)
 		return err
 	}
-	_, err = tx.ExecContext(ctx, `
+
+	_, err = tx.Exec(`
 		INSERT INTO asset_history (asset_id, old_status, new_status, employee_id, performed_by)
 		VALUES ($1, 'available', 'assigned', $2, $3)
 	`, req.AssetID, req.EmployeeID, req.AssignedBy)
@@ -354,22 +378,15 @@ func AssignMonitorAsset(req *models.AssignAssetRequest) error {
 		return err
 	}
 
-	if err := tx.Commit(); err != nil {
-		log.Println("Transaction commit error:", err)
-		return err
-	}
-
 	return nil
 }
 func AssignMouseAsset(req *models.AssignAssetRequest) error {
-	ctx := context.Background()
 	var currentStatus string
-	err := database.ST.QueryRowContext(ctx, `
-		SELECT asset_status FROM assets WHERE id = $1 AND asset_type = 'mouse' AND deleted_at IS NULL
+	err := database.ST.QueryRow(`
+		SELECT asset_status FROM assets 
+		WHERE id = $1 AND asset_type = 'mouse' AND deleted_at IS NULL
 	`, req.AssetID).Scan(&currentStatus)
-
 	if err != nil {
-		log.Println("Asset check error:", err)
 		return errors.New("invalid asset ID")
 	}
 
@@ -377,13 +394,23 @@ func AssignMouseAsset(req *models.AssignAssetRequest) error {
 		return errors.New("mouse is not available for assignment")
 	}
 
-	tx, err := database.ST.BeginTx(ctx, nil)
+	tx, err := database.ST.Begin()
 	if err != nil {
 		log.Println("Transaction begin error:", err)
 		return err
 	}
-	defer tx.Rollback()
-	_, err = tx.ExecContext(ctx, `
+	defer func() {
+		if p := recover(); p != nil {
+			_ = tx.Rollback()
+			panic(p)
+		} else if err != nil {
+			_ = tx.Rollback()
+		} else {
+			err = tx.Commit()
+		}
+	}()
+
+	_, err = tx.Exec(`
 		INSERT INTO asset_timeline (asset_id, assigned_to, assigned_by)
 		VALUES ($1, $2, $3)
 	`, req.AssetID, req.EmployeeID, req.AssignedBy)
@@ -391,14 +418,18 @@ func AssignMouseAsset(req *models.AssignAssetRequest) error {
 		log.Println("Timeline insert error:", err)
 		return err
 	}
-	_, err = tx.ExecContext(ctx, `
-		UPDATE assets SET asset_status = 'assigned', updated_at = now() WHERE id = $1
+
+	_, err = tx.Exec(`
+		UPDATE assets 
+		SET asset_status = 'assigned', updated_at = now() 
+		WHERE id = $1
 	`, req.AssetID)
 	if err != nil {
 		log.Println("Assets update error:", err)
 		return err
 	}
-	_, err = tx.ExecContext(ctx, `
+
+	_, err = tx.Exec(`
 		INSERT INTO asset_history (asset_id, old_status, new_status, employee_id, performed_by)
 		VALUES ($1, 'available', 'assigned', $2, $3)
 	`, req.AssetID, req.EmployeeID, req.AssignedBy)
@@ -407,20 +438,14 @@ func AssignMouseAsset(req *models.AssignAssetRequest) error {
 		return err
 	}
 
-	if err := tx.Commit(); err != nil {
-		log.Println("Transaction commit error:", err)
-		return err
-	}
-
 	return nil
 }
 func AssignHardDiskAsset(req *models.AssignAssetRequest) error {
-	ctx := context.Background()
 	var currentStatus string
-	err := database.ST.QueryRowContext(ctx, `
-		SELECT asset_status FROM assets WHERE id = $1 AND asset_type = 'harddisk' AND deleted_at IS NULL
+	err := database.ST.QueryRow(`
+		SELECT asset_status FROM assets 
+		WHERE id = $1 AND asset_type = 'harddisk' AND deleted_at IS NULL
 	`, req.AssetID).Scan(&currentStatus)
-
 	if err != nil {
 		log.Println("Asset check error:", err)
 		return errors.New("invalid asset ID")
@@ -430,13 +455,23 @@ func AssignHardDiskAsset(req *models.AssignAssetRequest) error {
 		return errors.New("harddisk is not available for assignment")
 	}
 
-	tx, err := database.ST.BeginTx(ctx, nil)
+	tx, err := database.ST.Begin()
 	if err != nil {
 		log.Println("Transaction begin error:", err)
 		return err
 	}
-	defer tx.Rollback()
-	_, err = tx.ExecContext(ctx, `
+	defer func() {
+		if p := recover(); p != nil {
+			_ = tx.Rollback()
+			panic(p)
+		} else if err != nil {
+			_ = tx.Rollback()
+		} else {
+			err = tx.Commit()
+		}
+	}()
+
+	_, err = tx.Exec(`
 		INSERT INTO asset_timeline (asset_id, assigned_to, assigned_by)
 		VALUES ($1, $2, $3)
 	`, req.AssetID, req.EmployeeID, req.AssignedBy)
@@ -444,14 +479,18 @@ func AssignHardDiskAsset(req *models.AssignAssetRequest) error {
 		log.Println("Timeline insert error:", err)
 		return err
 	}
-	_, err = tx.ExecContext(ctx, `
-		UPDATE assets SET asset_status = 'assigned', updated_at = now() WHERE id = $1
+
+	_, err = tx.Exec(`
+		UPDATE assets 
+		SET asset_status = 'assigned', updated_at = now() 
+		WHERE id = $1
 	`, req.AssetID)
 	if err != nil {
 		log.Println("Assets update error:", err)
 		return err
 	}
-	_, err = tx.ExecContext(ctx, `
+
+	_, err = tx.Exec(`
 		INSERT INTO asset_history (asset_id, old_status, new_status, employee_id, performed_by)
 		VALUES ($1, 'available', 'assigned', $2, $3)
 	`, req.AssetID, req.EmployeeID, req.AssignedBy)
@@ -460,22 +499,14 @@ func AssignHardDiskAsset(req *models.AssignAssetRequest) error {
 		return err
 	}
 
-	if err := tx.Commit(); err != nil {
-		log.Println("Transaction commit error:", err)
-		return err
-	}
-
 	return nil
 }
 func AssignPendriveAsset(req *models.AssignAssetRequest) error {
-	ctx := context.Background()
-
 	var currentStatus string
-	err := database.ST.QueryRowContext(ctx, `
+	err := database.ST.QueryRow(`
 		SELECT asset_status FROM assets 
 		WHERE id = $1 AND asset_type = 'pendrive' AND deleted_at IS NULL
 	`, req.AssetID).Scan(&currentStatus)
-
 	if err != nil {
 		log.Println("Asset check error:", err)
 		return errors.New("invalid asset ID")
@@ -485,14 +516,23 @@ func AssignPendriveAsset(req *models.AssignAssetRequest) error {
 		return errors.New("pendrive is not available for assignment")
 	}
 
-	tx, err := database.ST.BeginTx(ctx, nil)
+	tx, err := database.ST.Begin()
 	if err != nil {
 		log.Println("Transaction begin error:", err)
 		return err
 	}
-	defer tx.Rollback()
+	defer func() {
+		if p := recover(); p != nil {
+			_ = tx.Rollback()
+			panic(p)
+		} else if err != nil {
+			_ = tx.Rollback()
+		} else {
+			err = tx.Commit()
+		}
+	}()
 
-	_, err = tx.ExecContext(ctx, `
+	_, err = tx.Exec(`
 		INSERT INTO asset_timeline (asset_id, assigned_to, assigned_by)
 		VALUES ($1, $2, $3)
 	`, req.AssetID, req.EmployeeID, req.AssignedBy)
@@ -501,7 +541,7 @@ func AssignPendriveAsset(req *models.AssignAssetRequest) error {
 		return err
 	}
 
-	_, err = tx.ExecContext(ctx, `
+	_, err = tx.Exec(`
 		UPDATE assets SET asset_status = 'assigned', updated_at = now()
 		WHERE id = $1
 	`, req.AssetID)
@@ -510,7 +550,7 @@ func AssignPendriveAsset(req *models.AssignAssetRequest) error {
 		return err
 	}
 
-	_, err = tx.ExecContext(ctx, `
+	_, err = tx.Exec(`
 		INSERT INTO asset_history (asset_id, old_status, new_status, employee_id, performed_by)
 		VALUES ($1, 'available', 'assigned', $2, $3)
 	`, req.AssetID, req.EmployeeID, req.AssignedBy)
@@ -519,21 +559,15 @@ func AssignPendriveAsset(req *models.AssignAssetRequest) error {
 		return err
 	}
 
-	if err := tx.Commit(); err != nil {
-		log.Println("Transaction commit error:", err)
-		return err
-	}
-
 	return nil
 }
+
 func AssignAccessoriesAsset(req *models.AssignAssetRequest) error {
-	ctx := context.Background()
 	var currentStatus string
-	err := database.ST.QueryRowContext(ctx, `
+	err := database.ST.QueryRow(`
 		SELECT asset_status FROM assets 
 		WHERE id = $1 AND asset_type = 'accessories' AND deleted_at IS NULL
 	`, req.AssetID).Scan(&currentStatus)
-
 	if err != nil {
 		log.Println("Asset check error:", err)
 		return errors.New("invalid asset ID")
@@ -543,14 +577,23 @@ func AssignAccessoriesAsset(req *models.AssignAssetRequest) error {
 		return errors.New("accessories is not available for assignment")
 	}
 
-	tx, err := database.ST.BeginTx(ctx, nil)
+	tx, err := database.ST.Begin()
 	if err != nil {
 		log.Println("Transaction begin error:", err)
 		return err
 	}
-	defer tx.Rollback()
+	defer func() {
+		if p := recover(); p != nil {
+			_ = tx.Rollback()
+			panic(p)
+		} else if err != nil {
+			_ = tx.Rollback()
+		} else {
+			err = tx.Commit()
+		}
+	}()
 
-	_, err = tx.ExecContext(ctx, `
+	_, err = tx.Exec(`
 		INSERT INTO asset_timeline (asset_id, assigned_to, assigned_by)
 		VALUES ($1, $2, $3)
 	`, req.AssetID, req.EmployeeID, req.AssignedBy)
@@ -559,7 +602,7 @@ func AssignAccessoriesAsset(req *models.AssignAssetRequest) error {
 		return err
 	}
 
-	_, err = tx.ExecContext(ctx, `
+	_, err = tx.Exec(`
 		UPDATE assets SET asset_status = 'assigned', updated_at = now()
 		WHERE id = $1
 	`, req.AssetID)
@@ -568,17 +611,12 @@ func AssignAccessoriesAsset(req *models.AssignAssetRequest) error {
 		return err
 	}
 
-	_, err = tx.ExecContext(ctx, `
+	_, err = tx.Exec(`
 		INSERT INTO asset_history (asset_id, old_status, new_status, employee_id, performed_by)
 		VALUES ($1, 'available', 'assigned', $2, $3)
 	`, req.AssetID, req.EmployeeID, req.AssignedBy)
 	if err != nil {
 		log.Println("History insert error:", err)
-		return err
-	}
-
-	if err := tx.Commit(); err != nil {
-		log.Println("Transaction commit error:", err)
 		return err
 	}
 

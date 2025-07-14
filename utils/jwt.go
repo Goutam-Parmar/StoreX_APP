@@ -46,9 +46,3 @@ func ParseToken(tokenString string) (*jwt.Token, jwt.MapClaims, error) {
 	}
 	return token, claims, nil
 }
-func IsTokenType(claims jwt.MapClaims, expectedType string) bool {
-	if typ, ok := claims["type"].(string); ok {
-		return typ == expectedType
-	}
-	return false
-}

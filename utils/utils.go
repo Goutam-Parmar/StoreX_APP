@@ -13,7 +13,7 @@ type AuthClaims struct {
 
 func ExtractAuthClaims(header string) (*AuthClaims, error) {
 	if header == "" || !strings.HasPrefix(header, "Bearer ") {
-		return nil, fmt.Errorf("missing or malformed Authorization header")
+		return nil, fmt.Errorf("missing or hacked token  Authorization header")
 	}
 
 	tokenStr := strings.TrimPrefix(header, "Bearer ")

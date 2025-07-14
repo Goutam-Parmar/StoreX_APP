@@ -179,7 +179,7 @@ func CheckRegisterCredentials(req *models.RegisterUserRequest, w http.ResponseWr
 	req.Role = strings.ToLower(req.Role)
 	return nil
 }
-func GetAllEmployees(ctx context.Context) ([]models.EmployeeResponse, error) {
+func GetAllEmployees() ([]models.EmployeeResponse, error) {
 	query := `
 		SELECT 
 			u.id, 
@@ -197,7 +197,7 @@ func GetAllEmployees(ctx context.Context) ([]models.EmployeeResponse, error) {
 			u.is_deleted = FALSE;
 	`
 
-	rows, err := database.ST.QueryContext(ctx, query)
+	rows, err := database.ST.Query(query)
 	if err != nil {
 		return nil, err
 	}
@@ -228,6 +228,7 @@ func GetAllEmployees(ctx context.Context) ([]models.EmployeeResponse, error) {
 
 	return employees, nil
 }
+
 func CheckEmployeeHasAssets(employeeID string) (bool, error) {
 	var count int
 	query := `
@@ -252,7 +253,6 @@ func DeleteEmployee(employeeID string) error {
 }
 func GetMyDashboard(employeeID string) (*models.MyDashboardResponse, error) {
 	var resp models.MyDashboardResponse
-
 	err := database.ST.QueryRow(`
 		SELECT COUNT(*)
 		FROM asset_timeline
